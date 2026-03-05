@@ -1,46 +1,6 @@
 {
     "rewrites": [
         {
-            "source": "/auth/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/auth/$1"
-        },
-        {
-            "source": "/profile/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/profile/$1"
-        },
-        {
-            "source": "/plans/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/plans/$1"
-        },
-        {
-            "source": "/aromi/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/aromi/$1"
-        },
-        {
-            "source": "/progress/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/progress/$1"
-        },
-        {
-            "source": "/gamification/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/gamification/$1"
-        },
-        {
-            "source": "/grocery/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/grocery/$1"
-        },
-        {
-            "source": "/challenges/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/challenges/$1"
-        },
-        {
-            "source": "/reports/(.*)",
-            "destination": "https://arogyamitra-backend.vercel.app/reports/$1"
-        },
-        {
-            "source": "/health",
-            "destination": "https://arogyamitra-backend.vercel.app/health"
-        },
-        {
             "source": "/(.*)",
             "destination": "/index.html"
         }
