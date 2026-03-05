@@ -1,11 +1,10 @@
-services:
-  # Database
-  - type: database
-    name: arogyamitra-db
+databases:
+  - name: arogyamitra-db
     databaseName: arogyamitra
     user: aromi
     plan: free
 
+services:
   # Backend (FastAPI)
   - type: web
     name: arogyamitra-backend
