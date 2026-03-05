@@ -1,10 +1,11 @@
-"""Progress router — daily logging, retrieval, and summary."""
+from datetime import date, datetime, timedelta
+from typing import Optional
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 
 from app.auth import get_current_user
 from app.database import get_db
-from app.models.models import User, ProgressLog
+from app.models.models import User, ProgressLog, UserChallenge
 from app.schemas.schemas import ProgressLogRequest, ProgressLogOut, ProgressSummary
 
 router = APIRouter(prefix="/progress", tags=["progress"])
@@ -63,19 +64,30 @@ async def get_summary(
         .all()
     )
 
-    if not logs:
+    today = date.today()
+    
+    # Also include dates where challenges were completed
+    challenge_dates = db.query(UserChallenge.date).filter(
+        UserChallenge.user_id == current_user.id,
+        UserChallenge.completed == True
+    ).all()
+    dates_with_challenges = {c[0] for c in challenge_dates}
+
+    if not logs and not dates_with_challenges:
         return ProgressSummary(
             current_streak=0, longest_streak=0, total_workouts=0,
             adherence_pct=0.0, avg_mood=None, avg_sleep=None, weight_trend=[],
         )
 
     # Streak computation
-    from datetime import date, timedelta
     dates_with_workout = {l.date for l in logs if l.workout_completed}
+    
+    active_dates = dates_with_workout.union(dates_with_challenges)
+    
     today = date.today()
     current_streak, longest_streak = 0, 0
     temp = 0
-    all_dates = sorted(dates_with_workout)
+    all_dates = sorted(list(active_dates))
     for i, d in enumerate(all_dates):
         d_date = date.fromisoformat(d)
         if i == 0 or date.fromisoformat(all_dates[i - 1]) + timedelta(days=1) == d_date:
@@ -87,7 +99,7 @@ async def get_summary(
     temp = 0
     check = today
     while True:
-        if str(check) in dates_with_workout:
+        if str(check) in active_dates:
             temp += 1
             check -= timedelta(days=1)
         else:

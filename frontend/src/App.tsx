@@ -11,6 +11,12 @@ import AromiPage from './pages/AromiPage'
 import ProgressPage from './pages/ProgressPage'
 import AgentEventsPage from './pages/AgentEventsPage'
 import SettingsPage from './pages/SettingsPage'
+import HistoryPage from './pages/HistoryPage'
+import GroceryPage from './pages/GroceryPage'
+import WorkoutTimerPage from './pages/WorkoutTimerPage'
+import ChallengesPage from './pages/ChallengesPage'
+import PhotoTimelinePage from './pages/PhotoTimelinePage'
+import WeeklyReportPage from './pages/WeeklyReportPage'
 
 function RequireAuth({ children }: { children: React.ReactNode }) {
   return getToken() ? <>{children}</> : <Navigate to="/login" replace />
@@ -35,6 +41,12 @@ export default function App() {
                 <Route path="/progress" element={<ProgressPage />} />
                 <Route path="/agent-events" element={<AgentEventsPage />} />
                 <Route path="/settings" element={<SettingsPage />} />
+                <Route path="/history" element={<HistoryPage />} />
+                <Route path="/grocery" element={<GroceryPage />} />
+                <Route path="/workout/timer" element={<WorkoutTimerPage />} />
+                <Route path="/challenges" element={<ChallengesPage />} />
+                <Route path="/timeline" element={<PhotoTimelinePage />} />
+                <Route path="/reports/weekly" element={<WeeklyReportPage />} />
               </Routes>
             </Layout>
           </RequireAuth>

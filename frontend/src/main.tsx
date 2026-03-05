@@ -6,6 +6,10 @@ import { Toaster } from 'react-hot-toast'
 import App from './App'
 import './index.css'
 
+if (typeof window !== 'undefined') {
+  (window as any).global = window;
+}
+
 const queryClient = new QueryClient({
   defaultOptions: {
     queries: { retry: 1, staleTime: 30_000 },

@@ -11,7 +11,7 @@ from slowapi.util import get_remote_address
 
 from app.config import get_settings
 from app.database import Base, engine
-from app.routers import auth, profile, plans, aromi, progress, gamification
+from app.routers import auth, profile, plans, aromi, progress, gamification, grocery, challenges, reports
 
 logging.basicConfig(
     level=logging.INFO,
@@ -71,6 +71,9 @@ app.include_router(plans.router)
 app.include_router(aromi.router)
 app.include_router(progress.router)
 app.include_router(gamification.router)
+app.include_router(grocery.router)
+app.include_router(challenges.router)
+app.include_router(reports.router)
 
 
 # ── Health ────────────────────────────────────────────────────────────────────

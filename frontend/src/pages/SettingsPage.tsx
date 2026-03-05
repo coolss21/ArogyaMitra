@@ -3,20 +3,30 @@ import { useQuery, useMutation } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
 import { api, clearToken } from '../lib/api'
 import toast from 'react-hot-toast'
-import { Settings, Shield, Download, Trash2, Brain, Plus, Trash } from 'lucide-react'
+import { Settings, Shield, Download, Trash2, Brain, Plus, Trash, Stethoscope } from 'lucide-react'
+import { useQueryClient } from '@tanstack/react-query'
 
 export default function SettingsPage() {
   const navigate = useNavigate()
   const [confirmDelete, setConfirmDelete] = useState(false)
   const [newKey, setNewKey] = useState('')
   const [newVal, setNewVal] = useState('')
+  const [injuryInput, setInjuryInput] = useState('')
 
+  const queryClient = useQueryClient()
   const { data: user } = useQuery({ queryKey: ['me'], queryFn: api.auth.me })
+  const { data: profile } = useQuery({ queryKey: ['profile'], queryFn: api.profile.get })
   const { data: memories, refetch: refetchMemory } = useQuery({ queryKey: ['memories'], queryFn: api.aromi.memory.list })
 
   const deleteAccount = useMutation({
     mutationFn: api.profile.delete,
     onSuccess: () => { clearToken(); toast.success('Account deleted'); navigate('/login') },
+    onError: (e: any) => toast.error(e.message),
+  })
+
+  const updateProfile = useMutation({
+    mutationFn: (data: any) => api.profile.update(data),
+    onSuccess: () => { queryClient.invalidateQueries({ queryKey: ['profile'] }); toast.success('Profile updated!') },
     onError: (e: any) => toast.error(e.message),
   })
 
@@ -55,6 +65,31 @@ export default function SettingsPage() {
           <div className="flex justify-between py-2 border-b border-surface-700/50"><span className="text-surface-400">Email</span><span>{user?.email}</span></div>
           <div className="flex justify-between py-2 border-b border-surface-700/50"><span className="text-surface-400">Role</span><span className="capitalize badge-blue">{user?.role}</span></div>
           <div className="flex justify-between py-2"><span className="text-surface-400">Joined</span><span>{user?.created_at ? new Date(user.created_at).toLocaleDateString() : '—'}</span></div>
+        </div>
+      </div>
+
+      {/* Smart Injury Recovery */}
+      <div className="glass-card p-6 border-accent-500/20">
+        <h2 className="text-lg font-semibold mb-4 flex items-center gap-2"><Stethoscope className="w-5 h-5 text-accent-400" />Smart Injury Recovery</h2>
+        <p className="text-xs text-surface-400 mb-4">AROMI will automatically adapt your workouts to avoid stressing injured areas.</p>
+        
+        <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1 text-surface-300">Current Injuries / Conditions</label>
+            <textarea 
+              className="input-field min-h-[80px]" 
+              placeholder="e.g. 'Lower back pain', 'Sprained right ankle'"
+              defaultValue={profile?.injuries || ''}
+              onChange={e => setInjuryInput(e.target.value)}
+            />
+          </div>
+          <button 
+            onClick={() => updateProfile.mutate({ injuries: injuryInput || null })} 
+            disabled={updateProfile.isPending}
+            className="btn-accent px-4 py-2 text-sm"
+          >
+            {updateProfile.isPending ? 'Saving...' : 'Save Injuries'}
+          </button>
         </div>
       </div>
 

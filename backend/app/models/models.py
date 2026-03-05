@@ -39,6 +39,7 @@ class User(Base):
     user_memories: Mapped[list["UserMemory"]] = relationship("UserMemory", back_populates="user")
     conversation_states: Mapped[list["ConversationState"]] = relationship("ConversationState", back_populates="user")
     pledges: Mapped[list["Pledge"]] = relationship("Pledge", back_populates="user")
+    user_challenges: Mapped[list["UserChallenge"]] = relationship("UserChallenge", back_populates="user")
 
 
 # ──────────────────────────────────────────────────────────────────────────────
@@ -219,3 +220,19 @@ class ConversationState(Base):
     updated_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now(), onupdate=func.now())
 
     user: Mapped["User"] = relationship("User", back_populates="conversation_states")
+
+
+class UserChallenge(Base):
+    __tablename__ = "user_challenges"
+
+    id: Mapped[str] = mapped_column(String, primary_key=True, default=_uuid)
+    user_id: Mapped[str] = mapped_column(String, ForeignKey("users.id"), nullable=False, index=True)
+    challenge_title: Mapped[str] = mapped_column(String(200), nullable=False)
+    desc: Mapped[Optional[str]] = mapped_column(Text)
+    xp: Mapped[int] = mapped_column(Integer, default=50)
+    icon: Mapped[str] = mapped_column(String(20), default="🎯")
+    completed: Mapped[bool] = mapped_column(Boolean, default=False)
+    date: Mapped[str] = mapped_column(String(10), nullable=False, index=True)  # YYYY-MM-DD
+    created_at: Mapped[datetime] = mapped_column(DateTime, server_default=func.now())
+
+    user: Mapped["User"] = relationship("User", back_populates="user_challenges")

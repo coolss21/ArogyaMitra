@@ -2,7 +2,9 @@
  * Typed API client — all requests proxied through Vite to http://localhost:8000
  */
 
-const BASE = ''  // Vite proxy handles it
+// For production, this will be your backend URL (e.g., https://api.arogyamitra.com)
+// For local development, it can be empty if using Vite proxy
+const BASE = import.meta.env.VITE_API_BASE_URL || ''
 
 let _token: string | null = localStorage.getItem('token')
 
@@ -82,6 +84,12 @@ export const api = {
         nutritionHistory: () => request<any>('GET', '/plans/nutrition/history'),
     },
 
+    // ── Grocery ────────────────────────────────────────────────────────────────
+
+    grocery: {
+        list: () => request<any>('GET', '/grocery/list'),
+    },
+
     // ── AROMI ──────────────────────────────────────────────────────────────────
 
     aromi: {
@@ -119,5 +127,19 @@ export const api = {
         pledges: () => request<any[]>('GET', '/gamification/pledges'),
         createPledge: (data: any) => request<any>('POST', '/gamification/pledges', data),
         fulfillPledge: (id: string) => request<any>('PUT', `/gamification/pledges/${id}/fulfill`),
+    },
+
+    // ── Challenges ─────────────────────────────────────────────────────────────
+
+    challenges: {
+        getToday: () => request<any>('GET', '/challenges/today'),
+        accept: (title: string) => request<any>('POST', '/challenges/accept', { title }),
+        complete: (id: string) => request<any>('POST', `/challenges/complete/${id}`),
+    },
+
+    // ── Reports ────────────────────────────────────────────────────────────────
+
+    reports: {
+        getWeekly: () => request<any>('GET', '/reports/weekly'),
     },
 }

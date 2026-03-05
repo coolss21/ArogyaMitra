@@ -2,7 +2,7 @@ import { NavLink, useNavigate } from 'react-router-dom'
 import { clearToken } from '../lib/api'
 import {
   Heart, LayoutDashboard, Dumbbell, UtensilsCrossed, MessageCircle,
-  TrendingUp, Settings, LogOut, Zap, Activity
+  TrendingUp, Settings, LogOut, Zap, Activity, Clock, ShoppingCart, Trophy, Image
 } from 'lucide-react'
 
 const NAV = [
@@ -11,6 +11,11 @@ const NAV = [
   { to: '/nutrition', icon: UtensilsCrossed, label: 'Nutrition' },
   { to: '/aromi', icon: MessageCircle, label: 'AROMI' },
   { to: '/progress', icon: TrendingUp, label: 'Progress' },
+  { to: '/timeline', icon: Image, label: 'Photos' },
+  { to: '/challenges', icon: Trophy, label: 'Challenges' },
+  { to: '/reports/weekly', icon: Activity, label: 'Weekly Report' },
+  { to: '/history', icon: Clock, label: 'History' },
+  { to: '/grocery', icon: ShoppingCart, label: 'Grocery' },
   { to: '/agent-events', icon: Zap, label: 'Agent Log' },
   { to: '/settings', icon: Settings, label: 'Settings' },
 ]
@@ -77,8 +82,8 @@ export default function Layout({ children }: LayoutProps) {
         </main>
 
         {/* Bottom nav (mobile) */}
-        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface-900/95 backdrop-blur border-t border-surface-700/50 flex justify-around py-2 z-50">
-          {NAV.slice(0, 6).map(({ to, icon: Icon, label }) => (
+        <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface-900/95 backdrop-blur border-t border-surface-700/50 flex justify-around py-2 z-50 overflow-x-auto">
+          {NAV.slice(0, 8).map(({ to, icon: Icon, label }) => (
             <NavLink
               key={to}
               to={to}

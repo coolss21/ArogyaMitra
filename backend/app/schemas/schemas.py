@@ -259,7 +259,31 @@ class ProgressSummary(BaseModel):
     weight_trend: list[dict]
 
 
-# ── Gamification ──────────────────────────────────────────────────────────────
+# ── Reports ───────────────────────────────────────────────────────────────────
+
+class ReportWeeklyOut(BaseModel):
+    summary: str
+
+
+# ── Gamification & Challenges ──────────────────────────────────────────────────────────────
+
+class ChallengeOut(BaseModel):
+    id: str
+    title: str
+    desc: str
+    xp: int
+    icon: str
+    completed: bool
+
+
+class ChallengeListOut(BaseModel):
+    challenges: list[ChallengeOut]
+    total_xp_today: int
+
+
+class ChallengeAcceptRequest(BaseModel):
+    title: str
+
 
 class PledgeCreate(BaseModel):
     goal_description: str

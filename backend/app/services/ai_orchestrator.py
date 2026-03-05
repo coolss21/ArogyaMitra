@@ -11,10 +11,10 @@ from sqlalchemy.orm import Session
 
 from app.models.models import (
     WorkoutPlan, NutritionPlan, PlanAdjustment, Profile,
-    Conversation, Message
+    ConversationState
 )
 from app.services.openrouter import openrouter_client, request_hash
-from app.services.youtube import get_exercise_videos
+from app.services.youtube import get_exercise_video_url
 from app.config import get_settings
 
 log = structlog.get_logger()
@@ -267,7 +267,7 @@ class AIOrchestrator:
             for day in plan_data["days"]:
                 for ex in day.get("main_workout", []):
                     search_term = ex.get("youtube_search", ex.get("exercise", ""))
-                    ex["youtube_url"] = get_exercise_videos(search_term)
+                    ex["youtube_url"] = get_exercise_video_url(search_term)
 
         wp = WorkoutPlan(
             user_id=user_id,
@@ -339,37 +339,25 @@ class AIOrchestrator:
     ) -> tuple[str, str, bool, Optional[str]]:
         """Returns (conv_id, reply, adjustment_triggered, adjustment_summary)."""
 
-        # Get or create conversation
-        if conversation_id:
-            conv = db.query(Conversation).filter(
-                Conversation.id == conversation_id, Conversation.user_id == user_id
-            ).first()
-            if not conv:
-                conv = Conversation(user_id=user_id)
-                db.add(conv)
-                db.commit()
-                db.refresh(conv)
-        else:
-            conv = Conversation(user_id=user_id)
-            db.add(conv)
+        # Get or create conversation state
+        state = db.query(ConversationState).filter(
+            ConversationState.user_id == user_id,
+            ConversationState.session_id == (conversation_id or "default")
+        ).first()
+        
+        if not state:
+            state = ConversationState(user_id=user_id, session_id=(conversation_id or "default"), history=[])
+            db.add(state)
             db.commit()
-            db.refresh(conv)
+            db.refresh(state)
 
-        # Save user message
-        user_msg = Message(conversation_id=conv.id, role="user", content=message)
-        db.add(user_msg)
+        # Append user message to history
+        current_history = state.history or []
+        current_history.append({"role": "user", "content": message})
+        state.history = current_history
+        db.flush()
 
-        # Build context from last 20 messages
-        history = (
-            db.query(Message)
-            .filter(Message.conversation_id == conv.id)
-            .order_by(Message.created_at.desc())
-            .limit(20)
-            .all()
-        )
-        history.reverse()
-
-        # Get profile for context
+        # Build context
         profile = db.query(Profile).filter(Profile.user_id == user_id).first()
         profile_context = ""
         if profile:
@@ -378,9 +366,9 @@ class AIOrchestrator:
         messages = [
             {"role": "system", "content": CHAT_SYSTEM_PROMPT + profile_context},
         ]
-        for msg in history:
-            messages.append({"role": msg.role, "content": msg.content})
-        messages.append({"role": "user", "content": message})
+        # Use last 10 messages for context
+        for msg in current_history[-11:]:
+            messages.append(msg)
 
         reply = await openrouter_client.get_text(messages, temperature=0.5)
 
@@ -388,7 +376,6 @@ class AIOrchestrator:
         adjustment_triggered = ADJUSTMENT_MARKER in reply
         adjustment_summary = None
         if adjustment_triggered:
-            # Extract change type
             try:
                 marker_start = reply.index(ADJUSTMENT_MARKER) + len(ADJUSTMENT_MARKER)
                 marker_end = reply.index("]", marker_start)
@@ -396,19 +383,15 @@ class AIOrchestrator:
             except (ValueError, IndexError):
                 change_type = "general"
 
-            # Clean marker from reply
             reply = reply.replace(f"[ADJUSTMENT_NEEDED: {change_type}]", "").strip()
             adjustment_summary = f"Detected {change_type} — plan adjustment recommended."
 
-        # Save assistant message
-        asst_msg = Message(
-            conversation_id=conv.id, role="assistant", content=reply,
-            metadata_={"adjustment_triggered": adjustment_triggered}
-        )
-        db.add(asst_msg)
+        # Append assistant message
+        current_history.append({"role": "assistant", "content": reply})
+        state.history = current_history
         db.commit()
 
-        return conv.id, reply, adjustment_triggered, adjustment_summary
+        return state.session_id, reply, adjustment_triggered, adjustment_summary
 
     @staticmethod
     async def adjust_plan(

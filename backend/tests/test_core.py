@@ -22,7 +22,7 @@ def test_password_hashing():
 def test_jwt_token():
     from app.auth import create_access_token, decode_token
     data = {"sub": "user-123", "role": "user"}
-    token = create_access_token(data)
+    token = create_access_token("user-123", "user")
     assert isinstance(token, str)
     payload = decode_token(token)
     assert payload["sub"] == "user-123"

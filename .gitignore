@@ -38,3 +38,8 @@ Thumbs.db
 *.ntvs*
 *.njsproj
 *.sln
+
+# Test artifacts
+backend/*.txt
+backend/test.db
+backend/.pytest_cache/

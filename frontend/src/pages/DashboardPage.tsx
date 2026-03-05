@@ -1,7 +1,7 @@
 import { useQuery } from '@tanstack/react-query'
 import { api } from '../lib/api'
 import { Link } from 'react-router-dom'
-import { Dumbbell, UtensilsCrossed, TrendingUp, MessageCircle, Flame, Target, Trophy, Zap } from 'lucide-react'
+import { Dumbbell, UtensilsCrossed, TrendingUp, MessageCircle, Flame, Target, Trophy, Zap, Sparkles } from 'lucide-react'
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts'
 
 export default function DashboardPage() {
@@ -9,6 +9,7 @@ export default function DashboardPage() {
   const { data: summary } = useQuery({ queryKey: ['progress-summary'], queryFn: api.progress.summary })
   const { data: gamification } = useQuery({ queryKey: ['gamification'], queryFn: api.gamification.dashboard })
   const { data: workout } = useQuery({ queryKey: ['workout-latest'], queryFn: api.plans.getWorkout, retry: false })
+  const { data: report, isLoading: isReportLoading } = useQuery({ queryKey: ['reports-weekly'], queryFn: api.reports.getWeekly })
 
   return (
     <div className="space-y-8 animate-fade-in">
@@ -31,6 +32,28 @@ export default function DashboardPage() {
           </div>
         ))}
       </div>
+
+      {/* AI Weekly Report */}
+      {isReportLoading ? (
+        <div className="glass-card p-6 animate-pulse">
+          <div className="h-6 w-1/3 bg-surface-700 rounded mb-4"></div>
+          <div className="h-4 w-full bg-surface-700/50 rounded mb-2"></div>
+          <div className="h-4 w-2/3 bg-surface-700/50 rounded"></div>
+        </div>
+      ) : report?.summary && (
+        <div className="glass-card p-6 bg-gradient-to-br from-primary-500/10 to-accent-500/10 border-primary-500/30 relative overflow-hidden">
+          <div className="absolute -top-4 -right-4 p-4 opacity-5"><Sparkles className="w-32 h-32" /></div>
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-lg font-semibold flex items-center gap-2 text-primary-300">
+              <Sparkles className="w-5 h-5 text-accent-400" /> Weekly Insights
+            </h2>
+            <Link to="/reports/weekly" className="text-xs text-primary-400 hover:text-primary-300 transition-colors">
+              Full Report →
+            </Link>
+          </div>
+          <p className="text-surface-200 text-sm leading-relaxed relative z-10">{report.summary}</p>
+        </div>
+      )}
 
       {/* Weight chart */}
       {summary?.weight_trend?.length > 1 && (
