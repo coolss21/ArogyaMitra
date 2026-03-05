@@ -1,0 +1,42 @@
+services:
+  # Database
+  - type: database
+    name: arogyamitra-db
+    databaseName: arogyamitra
+    user: aromi
+    plan: free
+
+  # Backend (FastAPI)
+  - type: web
+    name: arogyamitra-backend
+    env: python
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn app.main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: arogyamitra-db
+          property: connectionString
+      - key: OPENROUTER_API_KEY
+        sync: false # Set in Render Dashboard
+      - key: JWT_SECRET
+        generateValue: true
+
+  # Frontend (Static Site)
+  - type: static
+    name: arogyamitra-frontend
+    env: static
+    rootDir: frontend
+    buildCommand: npm install && npm run build
+    publishDir: dist
+    envVars:
+      - key: VITE_API_BASE_URL
+        fromService:
+          type: web
+          name: arogyamitra-backend
+          property: host
+    routes:
+      - type: rewrite
+        src: /(.*)
+        dest: /index.html

@@ -9,6 +9,10 @@ settings = get_settings()
 
 def _get_engine():
     url = settings.DATABASE_URL
+    # Fix for Render/Heroku postgres:// URLs
+    if url.startswith("postgres://"):
+        url = url.replace("postgres://", "postgresql://", 1)
+        
     if url.startswith("sqlite"):
         engine = create_engine(
             url,
