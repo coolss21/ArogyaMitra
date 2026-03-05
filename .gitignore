@@ -1,0 +1,40 @@
+# Node
+node_modules/
+dist/
+dist-ssr/
+build/
+.npm
+package-lock.json
+npm-debug.log*
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+venv/
+env/
+.venv/
+.pytest_cache/
+htmlcov/
+*.egg-info/
+
+# Databases
+*.db
+*.sqlite3
+arogyamitra.db
+
+# Environment variables
+.env
+.env.local
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDEs and Editors
+.vscode/
+.idea/
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
