@@ -6,11 +6,11 @@ Max 3 iterations per message to prevent infinite loops.
 from __future__ import annotations
 
 import json
-import logging
 import time
 import uuid
 from typing import Optional
 
+import structlog
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -21,7 +21,7 @@ from app.services.memory import get_memory
 from app.services.openrouter import openrouter_client
 from app.services.tools import TOOL_REGISTRY, TOOL_DESCRIPTIONS
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 settings = get_settings()
 
 MAX_STEPS = 3

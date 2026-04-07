@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import json
-import logging
 import time
 from typing import Any
 
+import structlog
 from sqlalchemy.orm import Session
 
 from app.config import get_settings
@@ -15,7 +15,7 @@ from app.services.verifier import verify_and_fix_json
 from app.services.memory import set_memory, get_memory
 from app.services.youtube import get_exercise_video_url
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 settings = get_settings()
 
 
@@ -84,68 +84,19 @@ Required JSON schema:
       "day": 1,
       "day_name": "Monday",
       "meals": {
-        "breakfast": {
-          "name": "str", 
-          "ingredients": ["str"], 
-          "instructions": "str", 
-          "calories": 400, 
-          "protein_g": 20.0, 
-          "carbs_g": 50.0, 
-          "fat_g": 10.0,
-          "protein_per_100kcal": 5.0,
-          "alternatives": [
-            {"name": "str", "calories": 400, "protein_g": 20.0}
-          ]
-        },
-        "lunch": {
-          "name": "str", 
-          "ingredients": ["str"], 
-          "instructions": "str", 
-          "calories": 600, 
-          "protein_g": 30.0, 
-          "carbs_g": 60.0, 
-          "fat_g": 15.0,
-          "protein_per_100kcal": 5.0,
-          "alternatives": [
-            {"name": "str", "calories": 600, "protein_g": 30.0}
-          ]
-        },
-        "dinner": {
-          "name": "str", 
-          "ingredients": ["str"], 
-          "instructions": "str", 
-          "calories": 700, 
-          "protein_g": 35.0, 
-          "carbs_g": 70.0, 
-          "fat_g": 18.0,
-          "protein_per_100kcal": 5.0,
-          "alternatives": [
-            {"name": "str", "calories": 700, "protein_g": 35.0}
-          ]
-        },
-        "snacks": [
-          {
-            "name": "str", 
-            "ingredients": ["str"], 
-            "calories": 200, 
-            "protein_g": 10.0, 
-            "carbs_g": 20.0, 
-            "fat_g": 5.0,
-            "protein_per_100kcal": 5.0,
-            "alternatives": [
-              {"name": "str", "calories": 200, "protein_g": 10.0}
-            ]
-          }
-        ]
+        "breakfast": { "name": "str", "ingredients": ["str"], "calories": 400, "protein_g": 20.0, "carbs_g": 50.0, "fat_g": 10.0 },
+        "lunch": { "name": "str", "ingredients": ["str"], "calories": 600, "protein_g": 30.0, "carbs_g": 60.0, "fat_g": 15.0 },
+        "dinner": { "name": "str", "ingredients": ["str"], "calories": 700, "protein_g": 35.0, "carbs_g": 70.0, "fat_g": 18.0 },
+        "snacks": [ { "name": "str", "calories": 200, "protein_g": 10.0, "carbs_g": 20.0, "fat_g": 5.0 } ]
       },
-      "daily_totals": {"calories": 1900, "protein_g": 95.0, "carbs_g": 200.0, "fat_g": 48.0},
-      "allergy_substitutions": "str"
+      "daily_totals": {"calories": 1900, "protein_g": 95.0, "carbs_g": 200.0, "fat_g": 48.0}
     }
   ]
 }
 Rules:
-- protein_per_100kcal: (protein_g * 100) / calories.
-- alternatives: Provide 3 viable swaps for each main meal that match the calorie/protein profile.
+- Keep ingredients list concise.
+- Ensure daily_totals match the sum of meals.
+- Output MUST be valid JSON and fit within token limits.
 """
 
 ADJUST_SYSTEM = SAFETY_PREAMBLE + """

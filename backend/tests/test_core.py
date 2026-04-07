@@ -1,10 +1,11 @@
-"""Backend unit tests for ArogyaMitra – 7 tests covering auth, profile, AI JSON,
-adjustment classification, and progress summary."""
+"""Backend unit tests for ArogyaMitra – 12 tests covering auth, schemas,
+AI JSON validation, agent events, caching, marker detection, and CORS."""
 
-import pytest
 import json
+import pytest
 from datetime import datetime, timezone
-from unittest.mock import patch, AsyncMock
+from unittest.mock import patch, AsyncMock, MagicMock
+
 
 # ── Test 1: Password hashing ────────────────────────────────────────────
 
@@ -21,7 +22,6 @@ def test_password_hashing():
 
 def test_jwt_token():
     from app.auth import create_access_token, decode_token
-    data = {"sub": "user-123", "role": "user"}
     token = create_access_token("user-123", "user")
     assert isinstance(token, str)
     payload = decode_token(token)
@@ -64,6 +64,8 @@ def test_profile_validation_invalid_goal():
 
 def test_workout_plan_json_schema():
     """Validate that a properly structured workout plan passes validation."""
+    from app.services.verifier import verify_workout
+
     valid_plan = {
         "plan_name": "Beginner Home Workout",
         "summary": "7-day plan for beginners",
@@ -92,18 +94,9 @@ def test_workout_plan_json_schema():
         ],
     }
 
-    # Verify structure
-    assert "days" in valid_plan
-    assert len(valid_plan["days"]) == 7
-    for day in valid_plan["days"]:
-        assert "day" in day
-        assert "type" in day
-        assert "warmup" in day
-        assert "main_workout" in day
-        for ex in day["main_workout"]:
-            assert "exercise" in ex
-            assert "sets" in ex
-            assert "reps" in ex
+    is_valid, error = verify_workout(valid_plan)
+    assert is_valid is True
+    assert error == ""
 
 
 # ── Test 5: Intent classification ────────────────────────────────────────
@@ -123,7 +116,7 @@ def test_intent_classification():
 
 def test_progress_summary_computation():
     """Test streak and adherence computation logic."""
-    # Simulate log entries
+
     class MockLog:
         def __init__(self, date, completed, mood=None, sleep=None, weight=None):
             self.date = date
@@ -178,3 +171,117 @@ def test_register_validation():
     # Password too short
     with pytest.raises(Exception):
         RegisterRequest(email="test@example.com", password="short")
+
+
+# ── Test 8: Plan hash caching ────────────────────────────────────────────
+
+def test_plan_hash_caching():
+    """Verify that identical request parameters produce the same hash."""
+    from app.services.openrouter import request_hash
+
+    payload = {"goal": "muscle_gain", "location": "gym", "type": "workout"}
+    h1 = request_hash("user-1", payload)
+    h2 = request_hash("user-1", payload)
+    h3 = request_hash("user-1", {**payload, "goal": "weight_loss"})
+
+    assert h1 == h2, "Same input must produce same hash (cache hit)"
+    assert h1 != h3, "Different input must produce different hash (cache miss)"
+    assert len(h1) == 32, "Hash should be 32 chars (truncated SHA-256)"
+
+
+# ── Test 9: JSON verifier repair logic ───────────────────────────────────
+
+@pytest.mark.asyncio
+async def test_json_verifier_repair():
+    """Simulate bad JSON from LLM and verify auto-repair loop is triggered."""
+    from app.services.verifier import verify_workout, verify_and_fix_json
+
+    # Invalid plan (missing 'days')
+    bad_plan = {"plan_name": "Test", "summary": "X", "disclaimer": "Y"}
+    is_valid, error = verify_workout(bad_plan)
+    assert is_valid is False
+    assert "Missing top-level keys" in error
+
+    # Valid plan that would be returned by repair
+    fixed_plan = {
+        "plan_name": "Fixed",
+        "summary": "S",
+        "disclaimer": "D",
+        "days": [
+            {
+                "day": 1,
+                "day_name": "Monday",
+                "type": "rest",
+                "warmup": [],
+                "main_workout": [],
+                "cooldown": [],
+            }
+        ],
+    }
+
+    with patch("app.services.verifier.openrouter_client") as mock_client:
+        mock_client.get_json = AsyncMock(return_value=fixed_plan)
+        result = await verify_and_fix_json(bad_plan, "workout", [], max_retries=1)
+        assert result["plan_name"] == "Fixed"
+        mock_client.get_json.assert_called_once()
+
+
+# ── Test 10: Adjustment marker detection ──────────────────────────────────
+
+def test_adjustment_marker_detection():
+    """Verify that the [ADJUSTMENT_NEEDED: ...] marker is properly parsed."""
+    from app.services.ai_orchestrator import ADJUSTMENT_MARKER
+
+    # Simulate AI response with hidden marker
+    reply = "I recommend resting your shoulder. [ADJUSTMENT_NEEDED: injury] Take it easy for a few days."
+
+    assert ADJUSTMENT_MARKER in reply
+    marker_start = reply.index(ADJUSTMENT_MARKER) + len(ADJUSTMENT_MARKER)
+    marker_end = reply.index("]", marker_start)
+    change_type = reply[marker_start:marker_end].strip()
+    assert change_type == "injury"
+
+    # Clean reply
+    clean_reply = reply.replace(f"[ADJUSTMENT_NEEDED: {change_type}]", "").strip()
+    assert "[ADJUSTMENT_NEEDED" not in clean_reply
+    assert "resting your shoulder" in clean_reply
+
+
+# ── Test 11: AgentEvent model structure ───────────────────────────────────
+
+def test_agent_event_model():
+    """Verify AgentEvent model can be instantiated with all required fields."""
+    from app.models.models import AgentEvent
+
+    event = AgentEvent(
+        user_id="user-123",
+        session_id="session-abc",
+        step=1,
+        event_type="planner_decision",
+        tool_name="generate_workout_plan",
+        tool_args={"goal": "muscle_gain"},
+        rationale="User asked for a workout plan",
+        latency_ms=500,
+    )
+    assert event.event_type == "planner_decision"
+    assert event.tool_name == "generate_workout_plan"
+    assert event.step == 1
+    assert event.latency_ms == 500
+
+
+# ── Test 12: CORS / rate limit config sanity ─────────────────────────────
+
+def test_cors_and_rate_limit_config():
+    """Verify CORS origins are parsed correctly and rate limits are strings."""
+    from app.config import get_settings
+
+    settings = get_settings()
+    origins = settings.origins_list
+    assert isinstance(origins, list)
+    assert len(origins) >= 1
+    assert any("localhost" in o for o in origins)
+
+    # Rate limits should be valid slowapi format strings
+    assert "/" in settings.RATE_LIMIT_AUTH  # e.g. "10/minute"
+    assert "/" in settings.RATE_LIMIT_AI
+    assert "/" in settings.RATE_LIMIT_DEFAULT

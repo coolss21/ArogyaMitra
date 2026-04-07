@@ -1,0 +1,11 @@
+.git
+.gitignore
+node_modules/
+frontend/node_modules/
+frontend/dist/
+backend/__pycache__/
+backend/.pytest_cache/
+backend/*.db
+backend/challenges_tests*.txt
+*.md
+.env

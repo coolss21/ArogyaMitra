@@ -14,6 +14,9 @@ class Settings(BaseSettings):
     OPENROUTER_MAX_RETRIES: int = 3
     OPENROUTER_MAX_TOKENS: int = 4096
 
+    # YouTube (optional — fallback to search URLs if empty)
+    YOUTUBE_API_KEY: str = ""
+
     # Auth
     JWT_SECRET: str = "change-me-in-production"
     JWT_ALGORITHM: str = "HS256"
@@ -30,12 +33,20 @@ class Settings(BaseSettings):
     RATE_LIMIT_AI: str = "5/minute"
     RATE_LIMIT_DEFAULT: str = "60/minute"
 
+    # Server
+    PORT: int = 8000
+    ENVIRONMENT: str = "development"  # development | production
+
     # Debug
     DEBUG: bool = True
 
     @property
     def origins_list(self) -> list[str]:
         return [o.strip() for o in self.ALLOWED_ORIGINS.split(",")]
+
+    @property
+    def is_production(self) -> bool:
+        return self.ENVIRONMENT == "production"
 
     class Config:
         env_file = ".env"

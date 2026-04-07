@@ -1,0 +1,112 @@
+# Cloud Build configuration for GCP Cloud Run deployment
+# Usage: gcloud builds submit --config=cloudbuild.yaml
+
+substitutions:
+  _REGION: asia-south1
+  _BACKEND_SERVICE: arogyamitra-api
+  _FRONTEND_SERVICE: arogyamitra-web
+  _BACKEND_IMAGE: gcr.io/${PROJECT_ID}/arogyamitra-backend
+  _FRONTEND_IMAGE: gcr.io/${PROJECT_ID}/arogyamitra-frontend
+
+steps:
+  # ── Step 1: Build backend image ────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_BACKEND_IMAGE}:${SHORT_SHA}'
+      - '-t'
+      - '${_BACKEND_IMAGE}:latest'
+      - './backend'
+    id: 'build-backend'
+
+  # ── Step 2: Build frontend image ───────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args:
+      - 'build'
+      - '-t'
+      - '${_FRONTEND_IMAGE}:${SHORT_SHA}'
+      - '-t'
+      - '${_FRONTEND_IMAGE}:latest'
+      - '--build-arg'
+      - 'VITE_API_BASE_URL=https://${_BACKEND_SERVICE}-${PROJECT_NUMBER}.${_REGION}.run.app'
+      - './frontend'
+    id: 'build-frontend'
+
+  # ── Step 3: Push backend image ─────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_BACKEND_IMAGE}:${SHORT_SHA}']
+    id: 'push-backend'
+    waitFor: ['build-backend']
+
+  # ── Step 4: Push frontend image ────────────────────────────────────────
+  - name: 'gcr.io/cloud-builders/docker'
+    args: ['push', '${_FRONTEND_IMAGE}:${SHORT_SHA}']
+    id: 'push-frontend'
+    waitFor: ['build-frontend']
+
+  # ── Step 5: Deploy backend to Cloud Run ────────────────────────────────
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_BACKEND_SERVICE}'
+      - '--image'
+      - '${_BACKEND_IMAGE}:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '512Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '3'
+      - '--timeout'
+      - '120s'
+      - '--set-env-vars'
+      - 'ENVIRONMENT=production'
+    id: 'deploy-backend'
+    waitFor: ['push-backend']
+
+  # ── Step 6: Deploy frontend to Cloud Run ───────────────────────────────
+  - name: 'gcr.io/google.com/cloudsdktool/cloud-sdk'
+    entrypoint: gcloud
+    args:
+      - 'run'
+      - 'deploy'
+      - '${_FRONTEND_SERVICE}'
+      - '--image'
+      - '${_FRONTEND_IMAGE}:${SHORT_SHA}'
+      - '--region'
+      - '${_REGION}'
+      - '--platform'
+      - 'managed'
+      - '--allow-unauthenticated'
+      - '--memory'
+      - '256Mi'
+      - '--cpu'
+      - '1'
+      - '--min-instances'
+      - '0'
+      - '--max-instances'
+      - '2'
+      - '--port'
+      - '8080'
+    id: 'deploy-frontend'
+    waitFor: ['push-frontend']
+
+images:
+  - '${_BACKEND_IMAGE}:${SHORT_SHA}'
+  - '${_BACKEND_IMAGE}:latest'
+  - '${_FRONTEND_IMAGE}:${SHORT_SHA}'
+  - '${_FRONTEND_IMAGE}:latest'
+
+timeout: '1200s'
+options:
+  logging: CLOUD_LOGGING_ONLY

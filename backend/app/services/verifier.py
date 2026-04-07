@@ -1,12 +1,13 @@
 """Strict JSON schema verification for LLM-generated plans with auto-retry."""
 from __future__ import annotations
 
-import logging
 from typing import Any
+
+import structlog
 
 from app.services.openrouter import openrouter_client
 
-log = logging.getLogger(__name__)
+log = structlog.get_logger(__name__)
 
 # ── Schema Definitions ────────────────────────────────────────────────────────
 

@@ -9,22 +9,27 @@ services:
       - "8000:8000"
     env_file:
       - .env
+    environment:
+      - PORT=8000
+      - ENVIRONMENT=development
+      - DATABASE_URL=postgresql://aromi:aromi_secret@postgres:5432/arogyamitra
     volumes:
       - ./backend:/app
     depends_on:
-      - postgres
+      postgres:
+        condition: service_healthy
     command: uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 
   frontend:
     build:
       context: ./frontend
       dockerfile: Dockerfile
+      args:
+        VITE_API_BASE_URL: "http://localhost:8000"
     ports:
-      - "5173:5173"
-    volumes:
-      - ./frontend:/app
-      - /app/node_modules
-    command: npm run dev -- --host 0.0.0.0
+      - "5173:8080"
+    environment:
+      - PORT=8080
 
   postgres:
     image: postgres:16-alpine
@@ -36,6 +41,11 @@ services:
       - "5432:5432"
     volumes:
       - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aromi -d arogyamitra"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 volumes:
   pgdata:
