@@ -2,8 +2,8 @@
 FROM node:18-alpine AS frontend-builder
 WORKDIR /app/frontend
 
-COPY frontend/package.json frontend/package-lock.json ./
-RUN npm ci
+COPY frontend/package*.json ./
+RUN npm install
 
 COPY frontend/ ./
 # Empty VITE_API_BASE_URL forces frontend to call relative paths (/auth) instead of Absolute URLs
