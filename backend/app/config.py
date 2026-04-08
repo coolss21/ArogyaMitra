@@ -50,7 +50,10 @@ class Settings(BaseSettings):
 
     class Config:
         env_file = ".env"
+        env_file_encoding = "utf-8"
         extra = "ignore"
+        # If .env doesn't exist (e.g. in Docker), just use OS env vars
+        env_ignore_empty = True
 
 
 @lru_cache()
