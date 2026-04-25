@@ -1,8 +1,51 @@
-# ArogyaMitra 🏋️‍♀️ AI Fitness & Wellness Platform
+<div align="center">
 
-An AI-powered fitness and wellness platform with **AROMI** — your personal agentic AI coach for personalized workouts, nutrition plans, progress tracking, and real-time adaptive coaching.
+# 🏋️‍♀️ ArogyaMitra — AI Fitness & Wellness Platform
 
-## 🌟 Features
+**Your personal agentic AI coach for workouts, nutrition, and adaptive health coaching**
+
+[![CI/CD](https://github.com/coolss21/ArogyaMitra/actions/workflows/ci.yml/badge.svg)](https://github.com/coolss21/ArogyaMitra/actions)
+[![Python 3.11+](https://img.shields.io/badge/Python-3.11+-3776AB.svg?logo=python&logoColor=white)](https://python.org)
+[![React 18](https://img.shields.io/badge/React-18-61DAFB.svg?logo=react&logoColor=black)](https://react.dev/)
+[![FastAPI](https://img.shields.io/badge/FastAPI-009688.svg?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com/)
+[![TypeScript](https://img.shields.io/badge/TypeScript-3178C6.svg?logo=typescript&logoColor=white)](https://typescriptlang.org/)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+
+</div>
+
+---
+
+## 📌 Overview
+
+ArogyaMitra is a production-grade, full-stack AI fitness platform powered by **AROMI** — an agentic AI coach that uses a planner→tool→response loop to deliver personalized workout plans, nutrition guidance, progress tracking, and real-time adaptive coaching. Built with FastAPI, React 18, and OpenRouter LLM integration.
+
+---
+
+## 🧠 Agentic AI Architecture
+
+```mermaid
+graph TD
+    A[User Message] --> B[AROMI Planner]
+    B --> C{Intent Detection}
+    C -->|Workout Query| D[generate_workout Tool]
+    C -->|Nutrition Query| E[generate_nutrition Tool]
+    C -->|Progress Query| F[get_progress Tool]
+    C -->|Adjustment| G[adjust_plan Tool]
+    C -->|General| H[LLM Direct Response]
+    D --> I[OpenRouter LLM<br/>Llama 3.3 70B]
+    E --> I
+    F --> J[(PostgreSQL / SQLite)]
+    G --> I
+    I --> K[JSON Schema Validator<br/>+ Auto-Repair]
+    K --> L[Structured Response]
+    J --> L
+    L --> M[Agent Audit Trail]
+    M --> N[User Response]
+```
+
+---
+
+## ✨ Key Features
 
 - **🏋️ Personalized Workout Plans** — 7-day plans with warmup, exercises, cooldown, progressive overload, and YouTube links
 - **🍽️ AI Nutrition Plans** — 7-day meal plans with macros, recipes, allergy-safe substitutions, Indian cuisine focused
